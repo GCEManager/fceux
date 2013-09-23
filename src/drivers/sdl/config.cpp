@@ -1,3 +1,14 @@
+#include <unistd.h>
+#include <sys/types.h>
+#include <signal.h>
+#include <sys/time.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <strings.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "main.h"
 #include "throttle.h"
 #include "config.h"
@@ -14,17 +25,6 @@
 #ifdef WIN32
 #include <windows.h>
 #endif
-
-#include <unistd.h>
-
-#include <csignal>
-#include <cstring>
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 /**
  * Read a custom pallete from a file and load it into the core.
@@ -235,13 +235,7 @@ InitConfig()
 	config->addOption("mute", "SDL.MuteCapture", 0);
     #endif
     
-    // auto load/save on gameload/close
-	config->addOption("loadstate", "SDL.AutoLoadState", INVALID_STATE);
-	config->addOption("savestate", "SDL.AutoSaveState", INVALID_STATE);
-
-    //TODO implement this
-    config->addOption("periodicsaves", "SDL.PeriodicSaves", 0);
-
+    
     
     #ifdef _GTK
 	char* home_dir = getenv("HOME");
@@ -261,9 +255,7 @@ InitConfig()
 	
 	// enable new PPU core
 	config->addOption("newppu", "SDL.NewPPU", 0);
-
-    // quit when a+b+select+start is pressed
-    config->addOption("4buttonexit", "SDL.ABStartSelectExit", 0);
+	
 
 	// GamePad 0 - 3
 	for(unsigned int i = 0; i < GAMEPAD_NUM_DEVICES; i++) {

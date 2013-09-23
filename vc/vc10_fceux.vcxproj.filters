@@ -952,11 +952,11 @@
     <ClCompile Include="..\src\boards\vrc6.cpp">
       <Filter>boards</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\boards\dsoundv1.cpp">
+      <Filter>boards</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\utils\ioapi.cpp">
       <Filter>utils</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\boards\mihunche.cpp">
-      <Filter>boards</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1803,5 +1803,8 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\src\auxlib.lua" />
+    <CustomBuild Include="..\src\drivers\win\help\fceux.chm">
+      <Filter>drivers\win\help</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

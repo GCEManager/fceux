@@ -82,11 +82,8 @@ static const char *default_directory_names[13] = {
 #define NUMBER_OF_DIRECTORIES sizeof(directory_names) / sizeof(*directory_names)
 #define NUMBER_OF_DEFAULT_DIRECTORIES sizeof(default_directory_names) / sizeof(*default_directory_names)
 
-#define TV_ASPECT_DEFAULT_X 4.0
-#define TV_ASPECT_DEFAULT_Y 3.0
-
+extern double saspectw, saspecth;
 extern double winsizemulx, winsizemuly;
-extern double tvAspectX, tvAspectY;
 
 extern int ismaximized;
 extern int soundoptions;

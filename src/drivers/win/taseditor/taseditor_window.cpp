@@ -224,16 +224,16 @@ void TASEDITOR_WINDOW::init()
 				{
 					// for static text we specify rectangle
 					toolInfo.uFlags = TTF_SUBCLASS;
-					RECT toolRect;
-					GetWindowRect(GetDlgItem(hwndTASEditor, windowItems[i].id), &toolRect);
+					RECT tool_rect;
+					GetWindowRect(GetDlgItem(hwndTASEditor, windowItems[i].id), &tool_rect);
 					POINT pt;
-					pt.x = toolRect.left;
-					pt.y = toolRect.top;
+					pt.x = tool_rect.left;
+					pt.y = tool_rect.top;
 					ScreenToClient(hwndTASEditor, &pt);
 					toolInfo.rect.left = pt.x;
-					toolInfo.rect.right = toolInfo.rect.left + (toolRect.right - toolRect.left);
+					toolInfo.rect.right = toolInfo.rect.left + (tool_rect.right - tool_rect.left);
 					toolInfo.rect.top = pt.y;
-					toolInfo.rect.bottom = toolInfo.rect.top + (toolRect.bottom - toolRect.top);
+					toolInfo.rect.bottom = toolInfo.rect.top + (tool_rect.bottom - tool_rect.top);
 				} else
 				{
 					// for other controls we provide hwnd
@@ -328,7 +328,7 @@ void TASEDITOR_WINDOW::update()
 	if (mustUpdateMouseCursor)
 	{
 		// change mouse cursor depending on what it points at
-		LPCSTR cursorIcon = IDC_ARROW;
+		LPCSTR cursor_icon = IDC_ARROW;
 		switch (pianoRoll.dragMode)
 		{
 			case DRAG_MODE_NONE:
@@ -336,23 +336,23 @@ void TASEDITOR_WINDOW::update()
 				// normal mouseover
 				if (bookmarks.editMode == EDIT_MODE_BRANCHES)
 				{
-					int branchUnderMouse = bookmarks.itemUnderMouse;
-					if (branchUnderMouse >= 0 && branchUnderMouse < TOTAL_BOOKMARKS && bookmarks.bookmarksArray[branchUnderMouse].notEmpty)
+					int branch_under_mouse = bookmarks.itemUnderMouse;
+					if (branch_under_mouse >= 0 && branch_under_mouse < TOTAL_BOOKMARKS && bookmarks.bookmarksArray[branch_under_mouse].notEmpty)
 					{
-						int currentBranch = branches.getCurrentBranch();
-						if (currentBranch >= 0 && currentBranch < TOTAL_BOOKMARKS)
+						int current_branch = branches.getCurrentBranch();
+						if (current_branch >= 0 && current_branch < TOTAL_BOOKMARKS)
 						{
 							// find if the Branch belongs to the current timeline
-							int timelineBranch = branches.findFullTimelineForBranch(currentBranch);
-							while (timelineBranch != ITEM_UNDER_MOUSE_CLOUD)
+							int timeline_branch = branches.findFullTimelineForBranch(current_branch);
+							while (timeline_branch != ITEM_UNDER_MOUSE_CLOUD)
 							{
-								if (timelineBranch == branchUnderMouse)
+								if (timeline_branch == branch_under_mouse)
 									break;
-								timelineBranch = branches.getParentOf(timelineBranch);
+								timeline_branch = branches.getParentOf(timeline_branch);
 							}
-							if (timelineBranch == ITEM_UNDER_MOUSE_CLOUD)
-								// branchUnderMouse wasn't found in current timeline - change mouse cursor to a "?" mark
-								cursorIcon = IDC_HELP;
+							if (timeline_branch == ITEM_UNDER_MOUSE_CLOUD)
+								// branch_under_mouse wasn't found in current timeline
+								cursor_icon = IDC_HELP;
 						}
 					}
 				}
@@ -362,13 +362,13 @@ void TASEDITOR_WINDOW::update()
 			{
 				// user is dragging Playback cursor - show either normal arrow or arrow+wait
 				if (playback.getPauseFrame() >= 0)
-					cursorIcon = IDC_APPSTARTING;
+					cursor_icon = IDC_APPSTARTING;
 				break;
 			}
 			case DRAG_MODE_MARKER:
 			{
 				// user is dragging Marker
-				cursorIcon = IDC_SIZEALL;
+				cursor_icon = IDC_SIZEALL;
 				break;
 			}
 			case DRAG_MODE_OBSERVE:
@@ -379,7 +379,7 @@ void TASEDITOR_WINDOW::update()
 				// user is drawing/selecting - show normal arrow
 				break;
 		}
-		SetCursor(LoadCursor(0, cursorIcon));
+		SetCursor(LoadCursor(0, cursor_icon));
 		mustUpdateMouseCursor = false;
 	}
 }
@@ -515,10 +515,10 @@ void TASEDITOR_WINDOW::changeBookmarksListHeight(int newHeight)
 	if (!delta)
 		return;
 	// shift down all items that are below the Bookmarks List
-	int BookmarksListBottom = windowItems[WINDOWITEMS_BOOKMARKS_LIST].y + windowItems[WINDOWITEMS_BOOKMARKS_LIST].height;
+	int BookmarksList_bottom = windowItems[WINDOWITEMS_BOOKMARKS_LIST].y + windowItems[WINDOWITEMS_BOOKMARKS_LIST].height;
 	for (int i = 0; i < TASEDITOR_WINDOW_TOTAL_ITEMS; ++i)
 	{
-		if (windowItems[i].y > BookmarksListBottom)
+		if (windowItems[i].y > BookmarksList_bottom)
 			windowItems[i].y += delta;
 	}
 	// adjust Bookmarks List size
@@ -556,21 +556,21 @@ void TASEDITOR_WINDOW::updateTooltips()
 
 void TASEDITOR_WINDOW::updateCaption()
 {
-	char newCaption[300];
-	strcpy(newCaption, windowCaptioBase);
+	char new_caption[300];
+	strcpy(new_caption, windowCaptioBase);
 	if (!movie_readonly)
-		strcat(newCaption, recorder.getRecordingCaption());
+		strcat(new_caption, recorder.getRecordingCaption());
 	// add project name
 	std::string projectname = project.getProjectName();
 	if (!projectname.empty())
 	{
-		strcat(newCaption, " - ");
-		strcat(newCaption, projectname.c_str());
+		strcat(new_caption, " - ");
+		strcat(new_caption, projectname.c_str());
 	}
 	// and * if project has unsaved changes
 	if (project.getProjectChanged())
-		strcat(newCaption, "*");
-	SetWindowText(hwndTASEditor, newCaption);
+		strcat(new_caption, "*");
+	SetWindowText(hwndTASEditor, new_caption);
 }
 void TASEDITOR_WINDOW::redraw()
 {
@@ -841,7 +841,6 @@ BOOL CALLBACK TASEditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					break;
 				case LVN_ENDSCROLL:
 					pianoRoll.mustCheckItemUnderMouse = true;
-					//pianoRoll.recalculatePlaybackCursorOffset();	// an unfinished experiment
 					break;
 				}
 				break;
@@ -1041,33 +1040,33 @@ BOOL CALLBACK TASEditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					break;
 				case ID_CONFIG_SETGREENZONECAPACITY:
 					{
-						int newValue = taseditorConfig.greenzoneCapacity;
-						if (CWin32InputBox::GetInteger("Greenzone capacity", "Keep savestates for how many frames?\n(actual limit of savestates can be 5 times more than the number provided)", newValue, hWnd) == IDOK)
+						int new_capacity = taseditorConfig.greenzoneCapacity;
+						if (CWin32InputBox::GetInteger("Greenzone capacity", "Keep savestates for how many frames?\n(actual limit of savestates can be 5 times more than the number provided)", new_capacity, hWnd) == IDOK)
 						{
-							if (newValue < GREENZONE_CAPACITY_MIN)
-								newValue = GREENZONE_CAPACITY_MIN;
-							else if (newValue > GREENZONE_CAPACITY_MAX)
-								newValue = GREENZONE_CAPACITY_MAX;
-							if (newValue < taseditorConfig.greenzoneCapacity)
+							if (new_capacity < GREENZONE_CAPACITY_MIN)
+								new_capacity = GREENZONE_CAPACITY_MIN;
+							else if (new_capacity > GREENZONE_CAPACITY_MAX)
+								new_capacity = GREENZONE_CAPACITY_MAX;
+							if (new_capacity < taseditorConfig.greenzoneCapacity)
 							{
-								taseditorConfig.greenzoneCapacity = newValue;
+								taseditorConfig.greenzoneCapacity = new_capacity;
 								greenzone.runGreenzoneCleaning();
-							} else taseditorConfig.greenzoneCapacity = newValue;
+							} else taseditorConfig.greenzoneCapacity = new_capacity;
 						}
 						break;
 					}
 				case ID_CONFIG_SETMAXUNDOLEVELS:
 					{
-						int newValue = taseditorConfig.maxUndoLevels;
-						if (CWin32InputBox::GetInteger("Max undo levels", "Keep history of how many changes?", newValue, hWnd) == IDOK)
+						int new_size = taseditorConfig.maxUndoLevels;
+						if (CWin32InputBox::GetInteger("Max undo levels", "Keep history of how many changes?", new_size, hWnd) == IDOK)
 						{
-							if (newValue < UNDO_LEVELS_MIN)
-								newValue = UNDO_LEVELS_MIN;
-							else if (newValue > UNDO_LEVELS_MAX)
-								newValue = UNDO_LEVELS_MAX;
-							if (newValue != taseditorConfig.maxUndoLevels)
+							if (new_size < UNDO_LEVELS_MIN)
+								new_size = UNDO_LEVELS_MIN;
+							else if (new_size > UNDO_LEVELS_MAX)
+								new_size = UNDO_LEVELS_MAX;
+							if (new_size != taseditorConfig.maxUndoLevels)
 							{
-								taseditorConfig.maxUndoLevels = newValue;
+								taseditorConfig.maxUndoLevels = new_size;
 								history.updateHistoryLogSize();
 								selection.updateHistoryLogSize();
 							}
@@ -1288,10 +1287,10 @@ BOOL CALLBACK TASEditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					// transpose Selection to the beginning and scroll to it
 					if (pianoRoll.dragMode != DRAG_MODE_SELECTION && pianoRoll.dragMode != DRAG_MODE_DESELECTION)
 					{
-						int selectionBeginning = selection.getCurrentRowsSelectionBeginning();
-						if (selectionBeginning >= 0)
+						int selection_beginning = selection.getCurrentRowsSelectionBeginning();
+						if (selection_beginning >= 0)
 						{
-							selection.transposeVertically(-selectionBeginning);
+							selection.transposeVertically(-selection_beginning);
 							pianoRoll.ensureTheLineIsVisible(0);
 						}
 					}
@@ -1302,10 +1301,10 @@ BOOL CALLBACK TASEditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					// transpose Selection to the end and scroll to it
 					if (pianoRoll.dragMode != DRAG_MODE_SELECTION && pianoRoll.dragMode != DRAG_MODE_DESELECTION)
 					{
-						int selectionEnd = selection.getCurrentRowsSelectionEnd();
-						if (selectionEnd >= 0)
+						int selection_end = selection.getCurrentRowsSelectionEnd();
+						if (selection_end >= 0)
 						{
-							selection.transposeVertically(currMovieData.getNumRecords() - 1 - selectionEnd);
+							selection.transposeVertically(currMovieData.getNumRecords() - 1 - selection_end);
 							pianoRoll.ensureTheLineIsVisible(currMovieData.getNumRecords() - 1);
 						}
 					}
@@ -1324,9 +1323,9 @@ BOOL CALLBACK TASEditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					if (pianoRoll.dragMode != DRAG_MODE_SELECTION && pianoRoll.dragMode != DRAG_MODE_DESELECTION)
 					{
 						selection.transposeVertically(-1);
-						int selectionBeginning = selection.getCurrentRowsSelectionBeginning();
-						if (selectionBeginning >= 0)
-							pianoRoll.ensureTheLineIsVisible(selectionBeginning);
+						int selection_beginning = selection.getCurrentRowsSelectionBeginning();
+						if (selection_beginning >= 0)
+							pianoRoll.ensureTheLineIsVisible(selection_beginning);
 					}
 					break;
 				case ACCEL_CTRL_DOWN:
@@ -1334,9 +1333,9 @@ BOOL CALLBACK TASEditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 					if (pianoRoll.dragMode != DRAG_MODE_SELECTION && pianoRoll.dragMode != DRAG_MODE_DESELECTION)
 					{
 						selection.transposeVertically(1);
-						int selectionEnd = selection.getCurrentRowsSelectionEnd();
-						if (selectionEnd >= 0)
-							pianoRoll.ensureTheLineIsVisible(selectionEnd);
+						int selection_end = selection.getCurrentRowsSelectionEnd();
+						if (selection_end >= 0)
+							pianoRoll.ensureTheLineIsVisible(selection_end);
 					}
 					break;
 				case ACCEL_CTRL_LEFT:

@@ -1,3 +1,17 @@
+#include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
+#include <gdk/gdkx.h>
+
+#ifdef _GTK3
+#include <gdk/gdkkeysyms-compat.h>
+#endif
+
+#include <fstream>
+#include <iostream>
+#include <cstdlib>
+
+#include <SDL/SDL.h>
+
 #include "../../types.h"
 #include "../../fceu.h"
 #include "../../driver.h"
@@ -17,18 +31,6 @@
 #ifdef _S9XLUA_H
 #include "../../fceulua.h"
 #endif
-
-#include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
-#include <gdk/gdkx.h>
-
-#ifdef _GTK3
-#include <gdk/gdkkeysyms-compat.h>
-#endif
-
-#include <fstream>
-#include <iostream>
-#include <cstdlib>
 
 // Fix compliation errors for older version of GTK (Ubuntu 10.04 LTS)
 #if GTK_MINOR_VERSION < 24 && GTK_MAJOR_VERSION == 2
@@ -83,9 +85,6 @@ int configHotkey(char* hotkeyString)
 	SDL_Surface *screen;
 	SDL_Event event;
 	KillVideo();
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	return 0; // TODO - SDL 2.0
-#else
 	screen = SDL_SetVideoMode(420, 200, 8, 0);
 	//SDL_WM_SetCaption("Press a key to bind...", 0);
 
@@ -106,7 +105,6 @@ int configHotkey(char* hotkeyString)
 	}	
 	
 	return 0;
-#endif
 }
 // This function configures a single button on a gamepad
 int configGamepadButton(GtkButton* button, gpointer p)
@@ -227,7 +225,7 @@ void loadPalette (GtkWidget* w, gpointer p)
 	fileChooser = gtk_file_chooser_dialog_new ("Open NES Palette", GTK_WINDOW(MainWindow),
 			GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fileChooser), "/usr/share/fceux/palettes");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fileChooser), getcwd(NULL, 0));
 
 	if (gtk_dialog_run (GTK_DIALOG (fileChooser)) ==GTK_RESPONSE_ACCEPT)
 	{
@@ -510,14 +508,9 @@ void openHotkeyConfig()
         g_config->getOption(optionName, &keycode);
         gtk_tree_store_set(hotkey_store, &iter, 
                 COMMAND_COLUMN, optionName,
-                KEY_COLUMN,
-#if SDL_VERSION_ATLEAST(2, 0, 0)                                                    
-				SDL_GetKeyName(keycode),
-#else
-				SDL_GetKeyName((SDLKey)keycode),
-#endif
+                KEY_COLUMN, SDL_GetKeyName((SDLKey)keycode),
                 -1);
-        gtk_tree_store_append(hotkey_store, &iter, NULL); // acquire child iterator
+        gtk_tree_store_append(hotkey_store, &iter, NULL); // acquire child     iterator
     }                      
 
 	tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(hotkey_store));
@@ -600,13 +593,8 @@ void updateGamepadConfig(GtkWidget* w, gpointer p)
 		GtkWidget* mappedKey = buttonMappings[i];
 		if(GamePadConfig[padNo][i].ButtType[configNo] == BUTTC_KEYBOARD)
 		{
-#if SDL_VERSION_ATLEAST(2, 0, 0)                                                    
-			snprintf(strBuf, sizeof(strBuf), "<tt>%s</tt>", 
-					SDL_GetKeyName(GamePadConfig[padNo][i].ButtonNum[configNo]));
-#else
 			snprintf(strBuf, sizeof(strBuf), "<tt>%s</tt>", 
 					SDL_GetKeyName((SDLKey)GamePadConfig[padNo][i].ButtonNum[configNo]));
-#endif
 		}
 		else // FIXME: display joystick button/hat/axis names properly
 			strncpy(strBuf, "<tt>Joystick</tt>", sizeof(strBuf));
@@ -1368,7 +1356,7 @@ void hardReset ()
 		closeGame();
 		const char* lastFile;
 		g_config->getOption("SDL.LastOpenFile", &lastFile);
-		LoadGame(lastFile);
+		LoadGame(lastFile) == 0;
 		resizeGtkWindow();
 	}
 }
@@ -1521,9 +1509,6 @@ void loadLua ()
 	const char* last_file;
 	g_config->getOption("SDL.LastLoadLua", &last_file);
 	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(fileChooser), last_file);
-	
-	if(strcmp(last_file, "") == 0)
-		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fileChooser), "/usr/share/fceux/luaScripts");
 	
 	if (gtk_dialog_run (GTK_DIALOG (fileChooser)) ==GTK_RESPONSE_ACCEPT)
 	{
@@ -1946,28 +1931,8 @@ void changeState(GtkAction *action, GtkRadioAction *current, gpointer data)
 {
 	FCEUI_SelectState(gtk_radio_action_get_current_value(current), 0);
 }
-#if SDL_VERSION_ATLEAST(2, 0, 0)                                                    
-// SDL 1.2/2.0 compatibility macros
-#define SDLK_SCROLLOCK SDLK_SCROLLLOCK
-#define SDLK_PRINT SDLK_PRINTSCREEN
-#define SDLK_BREAK 0
-#define SDLK_COMPOSE 0
-#define SDLK_NUMLOCK SDLK_NUMLOCKCLEAR
-#define SDLK_KP0 SDLK_KP_0
-#define SDLK_KP1 SDLK_KP_1
-#define SDLK_KP2 SDLK_KP_2
-#define SDLK_KP3 SDLK_KP_3
-#define SDLK_KP4 SDLK_KP_4
-#define SDLK_KP5 SDLK_KP_5
-#define SDLK_KP6 SDLK_KP_6
-#define SDLK_KP7 SDLK_KP_7
-#define SDLK_KP8 SDLK_KP_8
-#define SDLK_KP9 SDLK_KP_9
-#define SDLK_LSUPER SDLK_LGUI
-#define SDLK_RSUPER SDLK_RGUI
-#define SDLK_LMETA 0
-#define SDLK_RMETA 0
-#endif
+
+
 // Adapted from Gens/GS.  Converts a GDK key value into an SDL key value.
 unsigned short GDKToSDLKeyval(int gdk_key)
 {
@@ -2115,12 +2080,9 @@ unsigned short GDKToSDLKeyval(int gdk_key)
 gint convertKeypress(GtkWidget *grab, GdkEventKey *event, gpointer user_data)
 {
 	SDL_Event sdlev;
-	int keystate;
-#if SDL_VERSION_ATLEAST(2, 0, 0) 
-	SDL_Keycode sdlkey;
-#else
 	SDLKey sdlkey;
-#endif	
+	int keystate;
+	
 	switch (event->type)
 	{
 		case GDK_KEY_PRESS:
@@ -2141,11 +2103,7 @@ gint convertKeypress(GtkWidget *grab, GdkEventKey *event, gpointer user_data)
 	}
 	
 	// Convert this keypress from GDK to SDL.
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-	sdlkey = GDKToSDLKeyval(event->keyval);
-#else
 	sdlkey = (SDLKey)GDKToSDLKeyval(event->keyval);
-#endif
 	
 	// Create an SDL event from the keypress.
 	sdlev.key.keysym.sym = sdlkey;
@@ -2156,10 +2114,8 @@ gint convertKeypress(GtkWidget *grab, GdkEventKey *event, gpointer user_data)
 		// Only let the emulator handle the key event if this window has the input focus.
 		if(keystate == 0 || gtk_window_is_active(GTK_WINDOW(MainWindow)))
 		{
-			#if SDL_VERSION_ATLEAST(2, 0, 0)
-			// Not sure how to do this yet with SDL 2.0
-			// TODO - SDL 2.0
-			//SDL_GetKeyboardState(NULL)[SDL_GetScancodeFromKey(sdlkey)] = keystate;
+			#if SDL_VERSION_ATLEAST(1, 3, 0)
+			SDL_GetKeyboardState(NULL)[SDL_GetScancodeFromKey(sdlkey)] = keystate;
 			#else
 			SDL_GetKeyState(NULL)[sdlkey] = keystate;
 			#endif

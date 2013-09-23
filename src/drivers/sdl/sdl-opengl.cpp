@@ -1,10 +1,4 @@
 #define GL_GLEXT_LEGACY
-
-#include "sdl.h"
-#include "sdl-opengl.h"
-#include "../common/vidblit.h"
-#include "../../utils/memory.h"
-
 #ifdef APPLEOPENGL
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
@@ -14,8 +8,13 @@
 #include <GL/glu.h>
 #include <GL/glext.h>
 #endif
-#include <cstring>
-#include <cstdlib>
+#include <string.h>
+#include <stdlib.h>
+
+#include "sdl.h"
+#include "sdl-opengl.h"
+#include "../common/vidblit.h"
+#include "../../utils/memory.h"
 
 #ifndef APIENTRY
 #define APIENTRY

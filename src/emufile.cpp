@@ -20,10 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#include <vector>
 #include "emufile.h"
 #include "utils/xstring.h"
-
-#include <vector>
 
 bool EMUFILE::readAllBytes(std::vector<u8>* dstbuf, const std::string& fname)
 {
@@ -248,7 +247,7 @@ size_t EMUFILE::read8le(u8* val)
 
 u8 EMUFILE::read8le()
 {
-	u8 temp = 0;
+	u8 temp;
 	fread(&temp,1);
 	return temp;
 }

@@ -27,7 +27,6 @@
 #include "tracer.h"
 #include "cdlogger.h"
 #include "main.h" //for GetRomName()
-#include "utils/xstring.h"
 
 #define INESPRIV
 #include "../../ines.h"
@@ -128,7 +127,7 @@ BOOL CALLBACK CDLoggerCallB(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			{
 				char nameo[2048];
 				strcpy(nameo, GetRomPath());
-				strcat(nameo, mass_replace(GetRomName(), "|", ".").c_str());
+				strcat(nameo, GetRomName());
 				strcat(nameo, ".cdl");
 				LoadCDLog(nameo);
 			}
@@ -281,7 +280,7 @@ void SaveCDLogFileAs()
 		strcpy(nameo, loadedcdfile);
 	} else
 	{
-		strcpy(nameo, mass_replace(GetRomName(), "|", ".").c_str());
+		strcpy(nameo, GetRomName());
 		strcat(nameo, ".cdl");
 	}
 	ofn.lpstrDefExt = "cdl";
@@ -301,7 +300,7 @@ void SaveCDLogFile()
 	{
 		char nameo[2048];
 		strcpy(nameo, GetRomPath());
-		strcat(nameo, mass_replace(GetRomName(), "|", ".").c_str());
+		strcat(nameo, GetRomName());
 		strcat(nameo, ".cdl");
 		RenameCDLog(nameo);
 	}
@@ -399,7 +398,7 @@ void SaveStrippedROM(int invert)
 	ofn.lStructSize=sizeof(ofn);
 	ofn.hInstance=fceu_hInstance;
 	ofn.lpstrTitle="Save Stripped File As...";
-	strcpy(sromfilename, mass_replace(GetRomName(), "|", ".").c_str());
+	strcpy(sromfilename, GetRomName());
 	if (GameInfo->type==GIT_NSF) {
 		ofn.lpstrFilter=NSFfilter;
 		ofn.lpstrDefExt = "nsf";
@@ -507,7 +506,7 @@ void CDLoggerROMChanged()
 	// try to load respective CDL file
 	char nameo[2048];
 	strcpy(nameo, GetRomPath());
-	strcat(nameo, mass_replace(GetRomName(), "|", ".").c_str());
+	strcat(nameo, GetRomName());
 	strcat(nameo, ".cdl");
 
 	FILE *FP;

@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "utils/xstring.h"
 #include <assert.h>
 #include "common.h"
 #include "debugger.h"
@@ -30,9 +29,11 @@
 #include "../../debug.h"
 
 extern bool break_on_cycles;
-extern uint64 break_cycles_limit;
+extern unsigned long int break_cycles_limit;
 extern bool break_on_instructions;
-extern uint64 break_instructions_limit;
+extern unsigned long int break_instructions_limit;
+
+extern char symbDebugEnabled;
 
 /**
 * Stores debugger preferences in a file
@@ -45,6 +46,9 @@ int storeDebuggerPreferences(FILE* f)
 	int i;
 	unsigned int size, len;
 	uint8 tmp;
+
+	// Flag that says whether symbolic debugging should be enabled
+	if (fwrite(&symbDebugEnabled, 1, 1, f) != 1) return 1;
 
 	// Write the number of CPU bookmarks
 	size = bookmarks_addr.size();
@@ -152,11 +156,13 @@ int storeHexPreferences(FILE* f)
 * @param romname Name of the ROM
 * @return 0 on success or an error code.
 **/
-int storePreferences(const char* romname)
+int storePreferences(char* romname)
 {
 
-	if (debuggerSaveLoadDEBFiles == false)
+	if (debuggerSaveLoadDEBFiles == false) {
 		return 0;
+	}
+
 
 	FILE* f;
 	char* filename;
@@ -167,7 +173,9 @@ int storePreferences(const char* romname)
 	// Moved debugger exit code due to complaints and the Debugger menu option being enabled
 
 	if (!debuggerWasActive)
+	{
 		return 0;
+	}
 
 	/*
 	// With some work, this could be made to prevent writing empty .deb files.
@@ -188,8 +196,7 @@ int storePreferences(const char* romname)
 	*/
 
 	filename = (char*)malloc(strlen(romname) + 5);
-	strcpy(filename, romname);
-	strcat(filename, ".deb");
+	sprintf(filename, "%s.deb", romname);
 
 	f = fopen(filename, "wb");
 
@@ -227,6 +234,9 @@ int loadDebuggerPreferences(FILE* f)
 	unsigned int i, size, len;
 	uint8 tmp;
 
+	// Read flag that says if symbolic debugging is enabled
+	if (fread(&symbDebugEnabled, sizeof(symbDebugEnabled), 1, f) != 1) return 1;
+	
 	// Read the number of CPU bookmarks
 	if (fread(&size, sizeof(unsigned int), 1, f) != 1) return 1;
 	bookmarks_addr.resize(size);
@@ -368,7 +378,7 @@ int loadHexPreferences(FILE* f)
 * @param romname Name of the active ROM file
 * @return 0 or an error code.
 **/
-int loadPreferences(const char* romname)
+int loadPreferences(char* romname)
 {
 	if (debuggerSaveLoadDEBFiles == false) {
 		return 0;
@@ -382,8 +392,7 @@ int loadPreferences(const char* romname)
 
 	// Get the name of the preferences file
 	char* filename = (char*)malloc(strlen(romname) + 5);
-	strcpy(filename, romname);
-	strcat(filename, ".deb");
+	sprintf(filename, "%s.deb", romname);
 	
 	f = fopen(filename, "rb");
 	free(filename);

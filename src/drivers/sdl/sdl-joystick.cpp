@@ -22,12 +22,12 @@
 /// \file
 /// \brief Handles joystick input using the SDL.
 
-#include "sdl.h"
-
-#include <cstdlib>
+#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <cerrno>
+#include <errno.h>
+
+#include "sdl.h"
 
 #define MAX_JOYSTICKS	32
 static SDL_Joystick *s_Joysticks[MAX_JOYSTICKS] = {NULL};

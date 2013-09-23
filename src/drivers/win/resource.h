@@ -92,7 +92,6 @@
 #define IDC_DEBUGGER_STEP_OUT           106
 #define IDC_ADDBP_MEM_PPU               106
 #define IDC_NTVIEW_PROPERTIES_LINE_4    106
-#define IDC_TEXT_LINES_TO_THIS_WINDOW   106
 #define BTN_PORT2                       107
 #define BTN_CDLOGGER_SAVE               107
 #define IDC_CHEAT_SCRL_POSSIBILITIES    107
@@ -114,7 +113,6 @@
 #define BTN_CDLOGGER_SAVE_UNUSED        109
 #define IDC_VIDEOCONFIG_43              109
 #define IDC_VIDEOCONFIG_TVASPECT        109
-#define IDC_GROUP_LOG_OPTIONS           109
 #define IDC_CHEAT_VAL_LT_BY             110
 #define MENU_SAVE_STATE                 110
 #define CB_ASK_EXIT                     110
@@ -124,7 +122,6 @@
 #define IDC_DEBUGGER_BREAK_ON_BAD_OP    110
 #define IDC_ROMPATCHER_BTN_APPLY        110
 #define LBL_CDLOGGER_RENDERCOUNT        110
-#define IDC_VIDEOCONFIG_SQUARE_PIXELS   110
 #define MENU_LOAD_STATE                 111
 #define CB_DISABLE_SCREEN_SAVER         111
 #define BTN_FAM                         111
@@ -133,13 +130,10 @@
 #define IDC_ROMPATCHER_BTN_SAVE         111
 #define IDC_CHEAT_VAL2                  111
 #define IDC_CHEAT_COM                   111
-#define IDC_VIDEOCONFIG_DIRECTDRAW_FS   111
 #define BTN_AUTO_HOLD                   112
 #define IDC_BTN_LOG_BROWSE              112
 #define IDC_DEBUGGER_BOOKMARK_ADD       112
-#define IDC_VIDEOCONFIG_DIRECTDRAW_WIN  112
 #define IDC_DEBUGGER_BOOKMARK_DEL       113
-#define IDC_EXTRA_LOG_OPTIONS           113
 #define BTN_CLEAR_AH                    114
 #define IDC_CHECK_LOG_NEW_INSTRUCTIONS  114
 #define IDD_DIALOG1                     114
@@ -168,10 +162,6 @@
 #define CHEAT_CONTEXT_GOTOINHEXEDITOR   119
 #define IDC_DEBUGGER_BREAK_ON_INSTRUCTIONS 119
 #define IDC_CHECK_LOG_FRAME_NUMBER      119
-#define IDC_CHECK_LOG_FRAMES_COUNT      119
-#define IDC_CHECK_LOG_CYCLES_COUNT      120
-#define IDC_CHECK_LOG_FRAME_NUMBER3     121
-#define IDC_CHECK_LOG_INSTRUCTIONS_COUNT 121
 #define CHECK_SOUND_8BIT                122
 #define IDD_DIALOG3                     123
 #define IDC_CHECK_SYMBOLIC_TRACING      123
@@ -364,7 +354,6 @@
 #define IDB_BITMAP_SELECTED18           287
 #define IDB_BITMAP_SELECTED19           288
 #define IDD_TASEDITOR_SAVINGOPTIONS     289
-#define IDD_SYMBOLIC_DEBUG_NAMING       290
 #define MENU_HIDE_MENU                  300
 #define COMBO_FILTER                    300
 #define IDC_EDIT_AUTHORINFO             300
@@ -390,8 +379,6 @@
 #define IDC_LABEL_AUTHORINFO            303
 #define IDC_BTN_CHEAT_UPD               303
 #define IDC_VIDEOCONFIG_YSCALE          303
-#define IDC_DEBUGGER_DISASSEMBLY2       303
-#define IDC_DEBUGGER_DISASSEMBLY_LEFT_PANEL 303
 #define MENU_ENABLE_AUTOSAVE            304
 #define IDC_LABEL_ROMUSED               304
 #define IDC_BTN_CHEAT_RESET             304
@@ -439,10 +426,8 @@
 #define IDC_FORCE_ASPECT_CORRECTION     403
 #define IDC_DEBUGGER_VAL_S              403
 #define IDC_VIDEOCONFIG_ASPECT_X        404
-#define IDC_TVASPECT_X                  404
 #define IDC_VIDEOCONFIG_ASPECT_Y        405
 #define IDC_DEBUGGER_VAL_S2             405
-#define IDC_TVASPECT_Y                  405
 #define IDC_VIDEOCONFIG_SCALER_WIN      406
 #define CHECK_ENABLE_MICROPHONE         407
 #define CTL_TINT_TRACKBAR               500
@@ -577,13 +562,9 @@
 #define IDC_AUTOSAVE_PERIOD             1147
 #define IDC_BUTTON9                     1148
 #define TASEDITOR_FIND_NEXT_SIMILAR_MARKER 1148
-#define IDC_SYMBOLIC_ADDRESS            1148
 #define IDC_HISTORYLIST                 1149
-#define IDC_SYMBOLIC_NAME               1149
 #define IDC_BOOKMARKSLIST               1150
-#define IDC_SYMBOLIC_FILENAME           1150
 #define TASEDITOR_NEXT_MARKER           1151
-#define IDC_SYMBOLIC_COMMENT            1151
 #define IDC_BRANCHES_BUTTON             1152
 #define IDC_JUMP_PLAYBACK_BUTTON        1153
 #define IDC_EDIT2                       1154
@@ -631,7 +612,6 @@
 #define IDC_MATCH_CASE                  1203
 #define IDC_COPY_INPUT                  1203
 #define IDC_AUTORESUMECDLOGGING         1203
-#define IDC_MASK_UNUSED_GRAPHICS        1203
 #define IDC_VOLUMEGROUP                 1204
 #define IDC_OMITBLANK                   1204
 #define IDC_CHECK3                      1204
@@ -640,7 +620,6 @@
 #define IDC_COPY_MARKERS                1204
 #define IDC_AUTORESUMECDLOGGING2        1204
 #define IDC_AUTOSAVECDL                 1204
-#define IDC_INVERT_THE_MASK             1204
 #define IDC_RAMLIST                     1205
 #define IDC_CHECK4                      1205
 #define IDC_CHECK_BOOKMARKS             1205
@@ -689,8 +668,6 @@
 #define IDC_C_RESET_CHANGES             1236
 #define IDC_C_UNDO                      1237
 #define IDC_WATCHLIST                   1238
-#define IDC_C_ELIMINATE2                1238
-#define IDC_C_HEXEDITOR                 1238
 #define IDC_C_WATCH_EDIT                1239
 #define IDC_C_WATCH_REMOVE              1240
 #define IDC_C_WATCH_DUPLICATE           1241
@@ -1195,16 +1172,9 @@
 #define ID_CONFIG_COMPACTQUICKSAVING    40580
 #define ID_CONFIG_SAVING_OPTIONS        40581
 #define ID_CDLFILENAME                  40582
-#define ID_VIEW_A                       40583
-#define ID_VIEW_HIGHLIGHT               40584
-#define ID_VIEW_HIGHLIGHT_ACTIVITY      40585
-#define ID_HIGHLIGHTING_FADEWHENPAUSED  40586
-#define ID_HIGHLIGHTING_SETFADINGPERIOD 40587
-#define ID_HIGHLIGHTING_HIGHLIGHT_ACTIVITY 40588
 #define IDC_DEBUGGER_ICONTRAY           55535
 #define MW_ValueLabel2                  65423
 #define MW_ValueLabel1                  65426
-#define IDC_STATIC_SLASHTEXT            65442
 #define IDC_BOOKMARK_NAME_TEXT          65535
 #define ID_CDL                          65535
 
@@ -1212,9 +1182,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        291
-#define _APS_NEXT_COMMAND_VALUE         40589
-#define _APS_NEXT_CONTROL_VALUE         1290
+#define _APS_NEXT_RESOURCE_VALUE        290
+#define _APS_NEXT_COMMAND_VALUE         40583
+#define _APS_NEXT_CONTROL_VALUE         1289
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

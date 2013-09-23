@@ -3,11 +3,10 @@
 
 #define MAX_MOVIEFILENAME_LEN 80
 
-#include "types.h"
-#include "emufile.h"
-
 #include <string>
 #include <iostream>
+#include "types.h"
+#include "emufile.h"
 
 extern bool bindSavestate;
 

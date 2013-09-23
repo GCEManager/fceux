@@ -182,8 +182,8 @@ int EnableBackgroundInput = 0;
 int ismaximized = 0;
 
 //Help Menu subtopics
-string moviehelp = "MovieRecording";		 //Movie Recording
-string gettingstartedhelp = "Gettingstarted";//Getting Started
+string moviehelp = "{695C964E-B83F-4A6E-9BA2-1A975387DB55}";		 //Movie Recording
+string gettingstartedhelp = "{C76AEBD9-1E27-4045-8A37-69E5A52D0F9A}";//Getting Started
 
 //********************************************************************************
 void SetMainWindowText()
@@ -335,15 +335,17 @@ static void ConvertFCM(HWND hwndOwner)
 
 void CalcWindowSize(RECT *al)
 {
-	double screen_width = VNSWID;
-	double screen_height = FSettings.TotalScanlines();
-	if (eoptions & EO_TVASPECT)
-		screen_width = ceil(screen_height * (screen_width / 256) * (tvAspectX / tvAspectY));
-
 	al->left = 0;
 	al->top = 0;
-	al->right = ceil(screen_width * winsizemulx);
-	al->bottom = menuYoffset + ceil(screen_height * winsizemuly);
+
+	al->bottom = FSettings.TotalScanlines();
+	if (eoptions & EO_TVASPECT)
+		al->right = al->bottom * winsizemulx * ((double)VNSWID / 256) * ((double)4 / 3);
+	else
+		al->right = VNSWID * winsizemulx;
+	al->bottom *= winsizemuly;
+	al->bottom += menuYoffset;
+
 
 	AdjustWindowRectEx(al,
 		GetWindowLong(hAppWnd, GWL_STYLE),
@@ -1121,9 +1123,6 @@ void GetMouseData(uint32 (&md)[3])
 {
 	extern RECT bestfitRect;
 
-	double screen_width = VNSWID;
-	double screen_height = FSettings.TotalScanlines();
-
 	if (eoptions & EO_BESTFIT && (bestfitRect.top || bestfitRect.left))
 	{
 		if ((int)mousex <= bestfitRect.left)
@@ -1131,20 +1130,20 @@ void GetMouseData(uint32 (&md)[3])
 			md[0] = 0;
 		} else if ((int)mousex >= bestfitRect.right)
 		{
-			md[0] = screen_width - 1;
+			md[0] = VNSWID;
 		} else
 		{
-			md[0] = screen_width * (mousex - bestfitRect.left) / (bestfitRect.right - bestfitRect.left);
+			md[0] = VNSWID * (mousex - bestfitRect.left) / (bestfitRect.right - bestfitRect.left);
 		}
 		if ((int)mousey <= bestfitRect.top)
 		{
 			md[1] = 0;
 		} else if ((int)mousey >= bestfitRect.bottom)
 		{
-			md[1] = screen_height - 1;
+			md[1] = FSettings.TotalScanlines();
 		} else
 		{
-			md[1] = screen_height * (mousey - bestfitRect.top) / (bestfitRect.bottom - bestfitRect.top);
+			md[1] = FSettings.TotalScanlines() * (mousey - bestfitRect.top) / (bestfitRect.bottom - bestfitRect.top);
 		}
 	} else
 	{
@@ -1155,20 +1154,20 @@ void GetMouseData(uint32 (&md)[3])
 			md[0] = 0;
 		} else if ((int)mousex >= client_rect.right)
 		{
-			md[0] = screen_width - 1;
+			md[0] = VNSWID;
 		} else
 		{
-			md[0] = screen_width * (mousex - client_rect.left) / (client_rect.right - client_rect.left);
+			md[0] = VNSWID * (mousex - client_rect.left) / (client_rect.right - client_rect.left);
 		}
 		if ((int)mousey <= client_rect.top)
 		{
 			md[1] = 0;
 		} else if ((int)mousey >= client_rect.bottom)
 		{
-			md[1] = screen_height - 1;
+			md[1] = FSettings.TotalScanlines();
 		} else
 		{
-			md[1] = screen_height * (mousey - client_rect.top) / (client_rect.bottom - client_rect.top);
+			md[1] = FSettings.TotalScanlines() * (mousey - client_rect.top) / (client_rect.bottom - client_rect.top);
 		}
 	}
 	md[0] += VNSCLIP;
@@ -1187,7 +1186,7 @@ void DumpSubtitles(HWND hWnd)
 	ofn.hwndOwner = hWnd;
 	ofn.lpstrTitle="Save Subtitles as...";
 	ofn.lpstrFilter = filter;
-	strcpy(nameo, mass_replace(GetRomName(), "|", ".").c_str());
+	strcpy(nameo,GetRomName());
 	ofn.lpstrFile = nameo;
 	ofn.nMaxFile = 256;
 	ofn.Flags = OFN_EXPLORER|OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
@@ -2246,7 +2245,7 @@ LRESULT FAR PASCAL AppWndProc(HWND hWnd,UINT msg,WPARAM wParam,LPARAM lParam)
 
 			//Load last auto-save
 			case FCEUX_CONTEXT_REWINDTOLASTAUTO:
-				FCEUI_RewindToLastAutosave();
+				FCEUI_Autosave();
 				break;
 
 			//Create a backup movie file
@@ -2376,7 +2375,6 @@ adelikat: Outsourced this to a remappable hotkey
 		EnableMenuItem(fceumenu,MENU_POWER,MF_BYCOMMAND | (FCEU_IsValidUI(FCEUI_POWER)?MF_ENABLED:MF_GRAYED));
 		EnableMenuItem(fceumenu,MENU_EJECT_DISK,MF_BYCOMMAND | (FCEU_IsValidUI(FCEUI_EJECT_DISK)?MF_ENABLED:MF_GRAYED));
 		EnableMenuItem(fceumenu,MENU_SWITCH_DISK,MF_BYCOMMAND | (FCEU_IsValidUI(FCEUI_SWITCH_DISK)?MF_ENABLED:MF_GRAYED));
-		EnableMenuItem(fceumenu,MENU_INSERT_COIN,MF_BYCOMMAND | (FCEU_IsValidUI(FCEUI_INSERT_COIN)?MF_ENABLED:MF_GRAYED));
 		EnableMenuItem(fceumenu,MENU_TASEDITOR,MF_BYCOMMAND | (FCEU_IsValidUI(FCEUI_TASEDITOR)?MF_ENABLED:MF_GRAYED));
 		EnableMenuItem(fceumenu,MENU_CLOSE_FILE,MF_BYCOMMAND | (FCEU_IsValidUI(FCEUI_CLOSEGAME) && GameInfo ?MF_ENABLED:MF_GRAYED));
 		EnableMenuItem(fceumenu,MENU_RECENT_FILES,MF_BYCOMMAND | ((FCEU_IsValidUI(FCEUI_OPENGAME) && HasRecentFiles()) ?MF_ENABLED:MF_GRAYED)); //adelikat - added && recent_files, otherwise this line prevents recent from ever being gray when TAS Editor is not engaged
@@ -2433,15 +2431,30 @@ void FixWXY(int pref, bool shift_held)
 {
 	if (eoptions & EO_FORCEASPECT)
 	{
-		if (pref == 0)
-			winsizemuly = winsizemulx;
-		else
-			winsizemulx = winsizemuly;
+		/* First, make sure the ratio is valid, and if it's not, change
+		it so that it doesn't break everything.
+		*/
+		if(saspectw < 0.01) saspectw = 0.01;
+		if(saspecth < 0.01) saspecth = 0.01;
+		if((saspectw / saspecth) > 100) saspecth = saspectw;
+		if((saspecth / saspectw) > 100) saspectw = saspecth;
+
+		if((saspectw / saspecth) < 0.1) saspecth = saspectw;
+		if((saspecth / saspectw) > 0.1) saspectw = saspecth;
+
+		if(!pref)
+		{
+			winsizemuly = winsizemulx * (saspecth / saspectw);
+		} else
+		{
+			winsizemulx = winsizemuly * (saspectw / saspecth);
+		}
 	}
-	if (winsizemulx < 0.1)
-		winsizemulx = 0.1;
-	if (winsizemuly < 0.1)
-		winsizemuly = 0.1;
+
+	if(winsizemulx<0.1)
+		winsizemulx=0.1;
+	if(winsizemuly<0.1)
+		winsizemuly=0.1;
 
 	// round to integer values
 	if (((eoptions & EO_FORCEISCALE) && !shift_held) || (!(eoptions & EO_FORCEISCALE) && shift_held))
@@ -2461,13 +2474,8 @@ void FixWXY(int pref, bool shift_held)
 		winsizemuly = y;    
 	}
 
-	/*
-	// is this really necessary?
-	if (winsizemulx > 100)
-		winsizemulx = 100;
-	if (winsizemuly > 100)
-		winsizemuly = 100;
-	*/
+	if(winsizemulx > 100) winsizemulx = 100;
+	if(winsizemuly > 100) winsizemuly = 100;
 }
 
 void UpdateFCEUWindow(void)
@@ -2672,7 +2680,7 @@ void FCEUD_AviRecordTo(void)
 	}
 	//else construct it from the ROM name.
 	else
-		tempFilename = mass_replace(GetRomName(), "|", ".").c_str();
+		tempFilename = GetRomName();
 	
 	aviFilename = aviDirectory + tempFilename;	//concate avi directory and movie filename
 				

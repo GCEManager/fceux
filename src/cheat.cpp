@@ -18,6 +18,11 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include <string>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
 
 #include "types.h"
 #include "x6502.h"
@@ -27,12 +32,6 @@
 #include "cart.h"
 #include "driver.h"
 #include "utils/memory.h"
-
-#include <string>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
-#include <cctype>
 
 using namespace std;
 

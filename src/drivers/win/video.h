@@ -17,15 +17,6 @@
 #include "main.h"
 #include "window.h"
 
-enum DIRECTDRAW_MODES
-{
-	DIRECTDRAW_MODE_SOFTWARE,
-	DIRECTDRAW_MODE_SURFACE_IN_RAM,
-	DIRECTDRAW_MODE_FULL,
-	// ...
-	DIRECTDRAW_MODES_TOTAL
-};
-
 #define VF_DDSTRETCHED     1
 
 #define VEF_LOSTSURFACE 1
@@ -51,9 +42,7 @@ extern vmdef vmodes[11];
 extern int winspecial;
 extern int NTSCwinspecial;
 
-extern int directDrawModeWindowed;
-extern int directDrawModeFullscreen;
-
+extern int disvaccel;
 extern int fssync;
 extern int winsync;
 

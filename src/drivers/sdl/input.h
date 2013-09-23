@@ -12,8 +12,6 @@ typedef struct {
 	//uint64 DeviceID[MAXBUTTCONFIG];	/* TODO */
 } ButtConfig;
 
-
-extern int NoWaiting;
 extern CFGSTRUCT InputConfig[];
 extern ARGPSTRUCT InputArgs[];
 extern int Hotkeys[];

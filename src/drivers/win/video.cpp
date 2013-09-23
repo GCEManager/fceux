@@ -25,7 +25,6 @@
 #include "../../video.h"
 #include "input.h"
 #include "mapinput.h"
-#include <math.h>
 
 extern bool fullscreenByDoubleclick;
 
@@ -41,8 +40,7 @@ static int bpp;
 static int vflags;
 static int veflags;
 
-int directDrawModeWindowed = DIRECTDRAW_MODE_SOFTWARE;
-int directDrawModeFullscreen = DIRECTDRAW_MODE_FULL;
+int disvaccel = 1;      // Disable video hardware acceleration. By default it's disabled in windowed, but enabled in Fullscreen mode
 
 int fssync=0;
 int winsync=0;
@@ -141,17 +139,13 @@ static bool firstInitialize = true;
 static int InitializeDDraw(int fs)
 {
 	//only init the palette the first time through
-	if (firstInitialize)
-	{
+	if(firstInitialize) {
 		firstInitialize = false;
-		color_palette = (PALETTEENTRY*)malloc(256 * sizeof(PALETTEENTRY));
+    color_palette = (PALETTEENTRY*)malloc(256 * sizeof(PALETTEENTRY));
 	}
 
-	if ((fs && directDrawModeFullscreen == DIRECTDRAW_MODE_SOFTWARE) || (!fs && directDrawModeWindowed == DIRECTDRAW_MODE_SOFTWARE))
-		ddrval = DirectDrawCreate((GUID FAR *)DDCREATE_EMULATIONONLY, &lpDD, NULL);
-	else
-		ddrval = DirectDrawCreate(NULL, &lpDD, NULL);
-
+	//(disvaccel&(1<<(fs?1:0)))?(GUID FAR *)DDCREATE_EMULATIONONLY:
+	ddrval = DirectDrawCreate((disvaccel&(1<<(fs?1:0)))?(GUID FAR *)DDCREATE_EMULATIONONLY:NULL, &lpDD, NULL);
 	if (ddrval != DD_OK)
 	{
 		//ShowDDErr("Error creating DirectDraw object.");
@@ -254,59 +248,34 @@ void recalculateBestFitRect(int width, int height)
 {
 	if (!lpDD7)
 		return;	// DirectDraw isn't initialized yet
-
-	double screen_width = VNSWID;
-	double screen_height = FSettings.TotalScanlines();
-	if (eoptions & EO_TVASPECT)
-		screen_width = ceil(screen_height * (screen_width / 256) * (tvAspectX / tvAspectY));
-
-	int center_x = width / 2;
-	int center_y = height / 2;
-
 	// calculate bestfitRect
 	double current_aspectratio = (double)width / (double)height;
-	double needed_aspectratio = screen_width / screen_height;
-	if (current_aspectratio >= needed_aspectratio)
+	double needed_aspectratio = (double)(VNSWID) / (double)(FSettings.TotalScanlines());
+	if (eoptions & EO_TVASPECT)
+		needed_aspectratio = ((double)VNSWID / 256) * ((double)4 / 3);
+	if (current_aspectratio == needed_aspectratio)
+	{
+		bestfitRect.left = 0;
+		bestfitRect.right = width;
+		bestfitRect.top = 0;
+		bestfitRect.bottom = height;
+	} else if (current_aspectratio > needed_aspectratio)
 	{
 		// the window is wider than emulated screen
-		double new_height = height;
-		if (eoptions & EO_SQUAREPIXELS)
-		{
-			new_height = int((double)height / screen_height) * screen_height;
-			if (new_height == 0)
-				new_height = height;
-		}
-		bestfitRect.top = center_y - (int)(new_height / 2);
-		bestfitRect.bottom = bestfitRect.top + new_height;
-		double new_width = (new_height * needed_aspectratio);
-		if (eoptions & EO_SQUAREPIXELS && !(eoptions & EO_TVASPECT))
-		{
-			int new_width_integer = int((double)new_width / screen_width) * screen_width;
-			if (new_width_integer > 0)
-				new_width = new_width_integer;
-		}
-		bestfitRect.left = center_x - (int)(new_width / 2);
+		bestfitRect.top = 0;
+		bestfitRect.bottom = height;
+		int center_x = width / 2;
+		double new_width = ((double)height * needed_aspectratio);
+		bestfitRect.left = center_x - (new_width / 2);
 		bestfitRect.right = bestfitRect.left + new_width;
 	} else
 	{
 		// the window is taller than emulated screen
-		double new_width = width;
-		if (eoptions & EO_SQUAREPIXELS)
-		{
-			new_width = int((double)width / screen_width) * screen_width;
-			if (new_width == 0)
-				new_width = width;
-		}
-		bestfitRect.left = center_x - (int)(new_width / 2);
-		bestfitRect.right = bestfitRect.left + new_width;
-		double new_height = (new_width / needed_aspectratio);
-		if (eoptions & EO_SQUAREPIXELS && !(eoptions & EO_TVASPECT))
-		{
-			int new_height_integer = int((double)new_height / screen_height) * screen_height;
-			if (new_height_integer > 0)
-				new_height = new_height_integer;
-		}
-		bestfitRect.top = center_y - (int)(new_height / 2);
+		bestfitRect.left = 0;
+		bestfitRect.right = width;
+		int center_y = height / 2;
+		double new_height = ((double)width / needed_aspectratio);
+		bestfitRect.top = center_y - (new_height / 2);
 		bestfitRect.bottom = bestfitRect.top + new_height;
 	}
 }
@@ -374,11 +343,13 @@ int SetVideoMode(int fs)
 		ddsdback.dwWidth=256 * specmul;
 		ddsdback.dwHeight=FSettings.TotalScanlines() * specmul;
 
-		if (directDrawModeWindowed == DIRECTDRAW_MODE_SURFACE_IN_RAM)
-			// create the buffer in system memory
-			ddsdback.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY;
+		//If the blit hardware can't stretch, assume it's cheap(and slow)
+		//and create the buffer in system memory.
 
-		ddrval = IDirectDraw7_CreateSurface(lpDD7, &ddsdback, &lpDDSBack, (IUnknown FAR*)NULL);
+		if(!(caps.dwCaps&DDCAPS_BLTSTRETCH))
+			ddsdback.ddsCaps.dwCaps|=DDSCAPS_SYSTEMMEMORY;
+
+		ddrval = IDirectDraw7_CreateSurface ( lpDD7, &ddsdback, &lpDDSBack, (IUnknown FAR*)NULL);
 		if (ddrval != DD_OK)
 		{
 			//ShowDDErr("Error creating secondary surface.");
@@ -464,9 +435,8 @@ int SetVideoMode(int fs)
 			ddsdback.dwWidth=256 * specmul; //vmodes[vmod].srect.right;
 			ddsdback.dwHeight=FSettings.TotalScanlines() * specmul; //vmodes[vmod].srect.bottom;
 
-			if (directDrawModeFullscreen == DIRECTDRAW_MODE_SURFACE_IN_RAM)
-				// create the buffer in system memory
-				ddsdback.ddsCaps.dwCaps |= DDSCAPS_SYSTEMMEMORY; 
+			if(!(caps.dwCaps&DDCAPS_BLTSTRETCH))
+				ddsdback.ddsCaps.dwCaps|=DDSCAPS_SYSTEMMEMORY; 
 
 			ddrval = IDirectDraw7_CreateSurface ( lpDD7, &ddsdback, &lpDDSBack, (IUnknown FAR*)NULL);
 			if(ddrval!=DD_OK)
@@ -676,8 +646,7 @@ static void BlitScreenWindow(unsigned char *XBuf)
 			blitRect.top += bestfitRect.bottom;
 			blitRect.bottom = wrect.bottom;
 			IDirectDrawSurface7_Blt(lpDDSPrimary, &blitRect, NULL, NULL, DDBLT_COLORFILL | DDBLT_ASYNC, &blitfx);
-		}
-		if (bestfitRect.left)
+		} else
 		{
 			// left border
 			blitRect.top = wrect.top;
@@ -1015,8 +984,7 @@ static void BlitScreenFull(uint8 *XBuf)
 				borderRect.top += bestfitRect.bottom;
 				borderRect.bottom = drect.bottom;
 				IDirectDrawSurface7_Blt(lpDDSPrimary, &borderRect, NULL, NULL, DDBLT_COLORFILL | DDBLT_ASYNC, &blitfx);
-			}
-			if (bestfitRect.left)
+			} else
 			{
 				// left border
 				borderRect.top = drect.top;
@@ -1201,17 +1169,17 @@ static int RecalcCustom(void)
 
 BOOL SetDlgItemDouble(HWND hDlg, int item, double value)
 {
-	char buf[16];
+	char buf[9]; //mbg merge 7/19/06 changed to 9 to leave room for \0
 	sprintf(buf,"%.6f",value);
-	return SetDlgItemText(hDlg, item, buf);
+	return SetDlgItemText(hDlg, item, buf); //mbg merge 7/17/06 added this return value
 }
 
 double GetDlgItemDouble(HWND hDlg, int item)
 {
-	char buf[16];
+	char buf[8];
 	double ret = 0;
 
-	GetDlgItemText(hDlg, item, buf, 15);
+	GetDlgItemText(hDlg, item, buf, 8);
 	sscanf(buf,"%lf",&ret);
 	return(ret);
 }
@@ -1265,21 +1233,8 @@ BOOL CALLBACK VideoConCallB(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SCALER_WIN,CB_ADDSTRING,0,(LPARAM)(LPSTR)str[x]);
 		}
 
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_SCALER_FS, CB_SETCURSEL, vmodes[0].special, (LPARAM)(LPSTR)0);
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_SCALER_WIN, CB_SETCURSEL, winspecial, (LPARAM)(LPSTR)0);
-
-		// Direct Draw modes
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_WIN, CB_ADDSTRING, 0, (LPARAM)(LPSTR)"No hardware acceleration");
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_WIN, CB_ADDSTRING, 0, (LPARAM)(LPSTR)"Create Surface in RAM");
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_WIN, CB_ADDSTRING, 0, (LPARAM)(LPSTR)"Hardware acceleration");
-
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_WIN, CB_SETCURSEL, directDrawModeWindowed, (LPARAM)(LPSTR)0);
-
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_FS, CB_ADDSTRING, 0, (LPARAM)(LPSTR)"No hardware acceleration");
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_FS, CB_ADDSTRING, 0, (LPARAM)(LPSTR)"Create Surface in RAM");
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_FS, CB_ADDSTRING, 0, (LPARAM)(LPSTR)"Hardware acceleration");
-
-		SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_FS, CB_SETCURSEL, directDrawModeFullscreen, (LPARAM)(LPSTR)0);
+		SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SCALER_FS,CB_SETCURSEL,vmodes[0].special,(LPARAM)(LPSTR)0);
+		SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SCALER_WIN,CB_SETCURSEL,winspecial,(LPARAM)(LPSTR)0);
 
 		if(eoptions&EO_FSAFTERLOAD)
 			CheckDlgButton(hwndDlg,IDC_VIDEOCONFIG_AUTO_FS,BST_CHECKED);
@@ -1293,14 +1248,17 @@ BOOL CALLBACK VideoConCallB(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 		if(eoptions&EO_BESTFIT)
 			CheckDlgButton(hwndDlg, IDC_VIDEOCONFIG_BESTFIT, BST_CHECKED);
 
+		if(eoptions&EO_TVASPECT)
+			CheckDlgButton(hwndDlg, IDC_VIDEOCONFIG_TVASPECT, BST_CHECKED);
+
 		if(eoptions&EO_BGCOLOR)
 			CheckDlgButton(hwndDlg,IDC_VIDEOCONFIG_CONSOLE_BGCOLOR,BST_CHECKED);
 
-		if(eoptions&EO_SQUAREPIXELS)
-			CheckDlgButton(hwndDlg, IDC_VIDEOCONFIG_SQUARE_PIXELS, BST_CHECKED);
+		if(disvaccel&1)
+			CheckDlgButton(hwndDlg,IDC_DISABLE_HW_ACCEL_WIN,BST_CHECKED);
 
-		if(eoptions&EO_TVASPECT)
-			CheckDlgButton(hwndDlg, IDC_VIDEOCONFIG_TVASPECT, BST_CHECKED);
+		if(disvaccel&2)
+			CheckDlgButton(hwndDlg,IDC_DISABLE_HW_ACCEL_FS,BST_CHECKED);
 
 		if(eoptions&EO_FORCEISCALE)
 			CheckDlgButton(hwndDlg,IDC_FORCE_INT_VIDEO_SCALARS,BST_CHECKED);
@@ -1317,8 +1275,8 @@ BOOL CALLBACK VideoConCallB(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 		SetDlgItemDouble(hwndDlg, IDC_WINSIZE_MUL_X, winsizemulx);
 		SetDlgItemDouble(hwndDlg, IDC_WINSIZE_MUL_Y, winsizemuly);
-		SetDlgItemDouble(hwndDlg, IDC_TVASPECT_X, tvAspectX);
-		SetDlgItemDouble(hwndDlg, IDC_TVASPECT_Y, tvAspectY);
+		//SetDlgItemDouble(hwndDlg, IDC_VIDEOCONFIG_ASPECT_X, saspectw);
+		//SetDlgItemDouble(hwndDlg, IDC_VIDEOCONFIG_ASPECT_Y, saspecth);
 
 		SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SYNC_METHOD_WIN,CB_ADDSTRING,0,(LPARAM)(LPSTR)"<none>");
 		SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SYNC_METHOD_FS,CB_ADDSTRING,0,(LPARAM)(LPSTR)"<none>");
@@ -1378,20 +1336,15 @@ gornk:
 				else
 					eoptions &= ~EO_BESTFIT;
 
-				if (IsDlgButtonChecked(hwndDlg, IDC_VIDEOCONFIG_CONSOLE_BGCOLOR) == BST_CHECKED)
-					eoptions |= EO_BGCOLOR;
-				else
-					eoptions &= ~EO_BGCOLOR;
-
-				if (IsDlgButtonChecked(hwndDlg, IDC_VIDEOCONFIG_SQUARE_PIXELS) == BST_CHECKED)
-					eoptions |= EO_SQUAREPIXELS;
-				else
-					eoptions &= ~EO_SQUAREPIXELS;
-
 				if (IsDlgButtonChecked(hwndDlg, IDC_VIDEOCONFIG_TVASPECT) == BST_CHECKED)
 					eoptions |= EO_TVASPECT;
 				else
 					eoptions &= ~EO_TVASPECT;
+
+				if (IsDlgButtonChecked(hwndDlg, IDC_VIDEOCONFIG_CONSOLE_BGCOLOR) == BST_CHECKED)
+					eoptions |= EO_BGCOLOR;
+				else
+					eoptions &= ~EO_BGCOLOR;
 
 				if(IsDlgButtonChecked(hwndDlg,IDC_VIDEOCONFIG_NO8LIM)==BST_CHECKED)
 					eoptions|=EO_NOSPRLIM;
@@ -1427,9 +1380,14 @@ gornk:
 				//vmodes[0].yscale=GetDlgItemInt(hwndDlg,IDC_VIDEOCONFIG_YSCALE,0,0);
 				vmodes[0].special=SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SCALER_FS,CB_GETCURSEL,0,(LPARAM)(LPSTR)0);
 
-				winspecial = SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_SCALER_WIN, CB_GETCURSEL, 0, (LPARAM)(LPSTR)0);
-				directDrawModeWindowed = SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_WIN, CB_GETCURSEL, 0, (LPARAM)(LPSTR)0) % DIRECTDRAW_MODES_TOTAL;
-				directDrawModeFullscreen = SendDlgItemMessage(hwndDlg, IDC_VIDEOCONFIG_DIRECTDRAW_FS, CB_GETCURSEL, 0, (LPARAM)(LPSTR)0) % DIRECTDRAW_MODES_TOTAL;
+				winspecial = SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SCALER_WIN,CB_GETCURSEL,0,(LPARAM)(LPSTR)0);
+				disvaccel = 0;
+
+				if(IsDlgButtonChecked(hwndDlg,IDC_DISABLE_HW_ACCEL_WIN)==BST_CHECKED)
+					disvaccel |= 1;
+				if(IsDlgButtonChecked(hwndDlg,IDC_DISABLE_HW_ACCEL_FS)==BST_CHECKED)
+					disvaccel |= 2;
+
 
 				if(IsDlgButtonChecked(hwndDlg,IDC_VIDEOCONFIG_FS)==BST_CHECKED)
 					fullscreen=1;
@@ -1452,15 +1410,11 @@ gornk:
 				if(IsDlgButtonChecked(hwndDlg,IDC_FORCE_ASPECT_CORRECTION)==BST_CHECKED)
 					eoptions|=EO_FORCEASPECT;
 
-				winsizemulx = GetDlgItemDouble(hwndDlg, IDC_WINSIZE_MUL_X);
-				winsizemuly = GetDlgItemDouble(hwndDlg, IDC_WINSIZE_MUL_Y);
+				winsizemulx=GetDlgItemDouble(hwndDlg, IDC_WINSIZE_MUL_X);
+				winsizemuly=GetDlgItemDouble(hwndDlg, IDC_WINSIZE_MUL_Y);
+				//saspectw=GetDlgItemDouble(hwndDlg, IDC_VIDEOCONFIG_ASPECT_X);
+				//saspecth=GetDlgItemDouble(hwndDlg, IDC_VIDEOCONFIG_ASPECT_Y);
 				FixWXY(0);
-				tvAspectX = GetDlgItemDouble(hwndDlg, IDC_TVASPECT_X);
-				tvAspectY = GetDlgItemDouble(hwndDlg, IDC_TVASPECT_Y);
-				if (tvAspectX < 0.1)
-					tvAspectX = 0.1;
-				if (tvAspectY < 0.1)
-					tvAspectY = 0.1;
 
 				winsync=SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SYNC_METHOD_WIN,CB_GETCURSEL,0,(LPARAM)(LPSTR)0);
 				fssync=SendDlgItemMessage(hwndDlg,IDC_VIDEOCONFIG_SYNC_METHOD_FS,CB_GETCURSEL,0,(LPARAM)(LPSTR)0);

@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <string>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <time.h>
 #include "types.h"
 #include "x6502.h"
 #include "fceu.h"
@@ -43,9 +49,9 @@
 #include "file.h"
 #include "vsuni.h"
 #include "ines.h"
+
 #ifdef WIN32
 #include "drivers/win/pref.h"
-#include "utils/xstring.h"
 
 extern void CDLoggerROMClosed();
 extern void CDLoggerROMChanged();
@@ -58,6 +64,9 @@ extern int32 fps_scale_unpaused;
 extern int32 fps_scale_frameadvance;
 extern void RefreshThrottleFPS();
 #endif
+
+#include <fstream>
+#include <sstream>
 
 #ifdef _S9XLUA_H
 #include "fceulua.h"
@@ -77,16 +86,6 @@ extern void RefreshThrottleFPS();
 #include "drivers/sdl/sdl.h"
 #endif
 
-#include <fstream>
-#include <sstream>
-#include <string>
-
-#include <cstring>
-#include <cstdio>
-#include <cstdlib>
-#include <cstdarg>
-#include <ctime>
-
 using namespace std;
 
 int AFon = 1, AFoff = 1, AutoFireOffset = 0; //For keeping track of autofire settings
@@ -99,20 +98,14 @@ bool AutoResumePlay = false;
 char romNameWhenClosingEmulator[2048] = {0};
 
 FCEUGI::FCEUGI()
-	: filename(0),
-	  archiveFilename(0) {
+	: filename(0)
+	, archiveFilename(0) {
 	//printf("%08x",opsize); // WTF?!
 }
 
 FCEUGI::~FCEUGI() {
-	if (filename) {
-        free(filename);
-        filename = NULL;
-    }
-	if (archiveFilename) {
-        delete archiveFilename;
-        archiveFilename = NULL;
-    }
+	if (filename) delete filename;
+	if (archiveFilename) delete archiveFilename;
 }
 
 bool CheckFileExists(const char* filename) {
@@ -148,16 +141,18 @@ static void FCEU_CloseGame(void)
 {
 	if (GameInfo)
 	{
-		if (AutoResumePlay)
+		if (AutoResumePlay && (GameInfo->type != GIT_NSF))
 		{
 			// save "-resume" savestate
-			FCEUSS_Save(FCEU_MakeFName(FCEUMKF_RESUMESTATE, 0, 0).c_str(), false);
+			FCEUSS_Save(FCEU_MakeFName(FCEUMKF_RESUMESTATE, 0, 0).c_str());
 		}
 
 #ifdef WIN32
 		extern char LoadedRomFName[2048];
-		if (storePreferences(mass_replace(LoadedRomFName, "|", ".").c_str()))
+		if (storePreferences(LoadedRomFName))
+		{
 			FCEUD_PrintError("Couldn't store debugging data");
+		}
 		CDLoggerROMClosed();
 #endif
 
@@ -167,7 +162,7 @@ static void FCEU_CloseGame(void)
 
 		if (GameInfo->name) {
 			free(GameInfo->name);
-			GameInfo->name = NULL;
+			GameInfo->name = 0;
 		}
 
 		if (GameInfo->type != GIT_NSF) {
@@ -268,8 +263,8 @@ void FlushGenieRW(void) {
 		}
 		free(AReadG);
 		free(BWriteG);
-		AReadG = NULL;
-		BWriteG = NULL;
+		AReadG = 0;
+		BWriteG = 0;
 		RWWrap = 0;
 	}
 }
@@ -280,10 +275,8 @@ readfunc GetReadHandler(int32 a) {
 	else
 		return ARead[a];
 }
-
 void SetReadHandler(int32 start, int32 end, readfunc func) {
 	int32 x;
-
 	if (!func)
 		func = ANull;
 
@@ -335,7 +328,6 @@ static void AllocBuffers() {
 
 static void FreeBuffers() {
 	FCEU_free(RAM);
-    RAM = NULL;
 }
 //------
 
@@ -368,16 +360,15 @@ void ResetGameLoaded(void) {
 	if (GameInfo) FCEU_CloseGame();
 	EmulationPaused = 0; //mbg 5/8/08 - loading games while paused was bad news. maybe this fixes it
 	GameStateRestore = 0;
-	PPU_hook = NULL;
-	GameHBIRQHook = NULL;
-	FFCEUX_PPURead = NULL;
-	FFCEUX_PPUWrite = NULL;
+	PPU_hook = 0;
+	GameHBIRQHook = 0;
+	FFCEUX_PPURead = 0;
+	FFCEUX_PPUWrite = 0;
 	if (GameExpSound.Kill)
 		GameExpSound.Kill();
 	memset(&GameExpSound, 0, sizeof(GameExpSound));
-	MapIRQHook = NULL;
+	MapIRQHook = 0;
 	MMC5Hack = 0;
-	PEC586Hack = 0;
 	PAL &= 1;
 	pale = 0;
 }
@@ -395,7 +386,8 @@ FCEUGI *FCEUI_LoadGameVirtual(const char *name, int OverwriteVidMode, bool silen
 	//----------
 	//attempt to open the files
 	FCEUFILE *fp;
-	char fullname[2048];	// this name contains both archive name and ROM file name
+
+	FCEU_printf("Loading %s...\n\n", name);
 
 	const char* romextensions[] = { "nes", "fds", 0 };
 	fp = FCEU_fopen(name, 0, "rb", 0, -1, romextensions);
@@ -405,21 +397,16 @@ FCEUGI *FCEUI_LoadGameVirtual(const char *name, int OverwriteVidMode, bool silen
 		if (!silent)
 			FCEU_PrintError("Error opening \"%s\"!", name);
 		return 0;
-	} else if (fp->archiveFilename != "")
-	{
-		strcpy(fullname, fp->archiveFilename.c_str());
-		strcat(fullname, "|");
-		strcat(fullname, fp->filename.c_str());
-	} else
-	{
-		strcpy(fullname, name);
 	}
 
-	//file opened ok. start loading.
-	FCEU_printf("Loading %s...\n\n", fullname);
 	GetFileBase(fp->filename.c_str());
+	//---------
+
+	//file opened ok. start loading.
+
 	ResetGameLoaded();
-	//reset parameters so they're cleared just in case a format's loader doesn't know to do the clearing
+
+	//reset parameters so theyre cleared just in case a format's loader doesnt know to do the clearing
 	MasterRomInfoParams = TMasterRomInfoParams();
 
 	if (!AutosaveStatus)
@@ -432,8 +419,7 @@ FCEUGI *FCEUI_LoadGameVirtual(const char *name, int OverwriteVidMode, bool silen
 	memset(GameInfo, 0, sizeof(FCEUGI));
 
 	GameInfo->filename = strdup(fp->filename.c_str());
-	if (fp->archiveFilename != "")
-		GameInfo->archiveFilename = strdup(fp->archiveFilename.c_str());
+	if (fp->archiveFilename != "") GameInfo->archiveFilename = strdup(fp->archiveFilename.c_str());
 	GameInfo->archiveCount = fp->archiveCount;
 
 	GameInfo->soundchan = 0;
@@ -449,13 +435,13 @@ FCEUGI *FCEUI_LoadGameVirtual(const char *name, int OverwriteVidMode, bool silen
 	bool FCEUXLoad(const char *name, FCEUFILE * fp);
 	/*if(FCEUXLoad(name,fp))
 	    goto endlseq;*/
-	if (iNESLoad(fullname, fp, OverwriteVidMode))
+	if (iNESLoad(name, fp, OverwriteVidMode))
 		goto endlseq;
-	if (NSFLoad(fullname, fp))
+	if (NSFLoad(name, fp))
 		goto endlseq;
-	if (UNIFLoad(fullname, fp))
+	if (UNIFLoad(name, fp))
 		goto endlseq;
-	if (FDSLoad(fullname, fp))
+	if (FDSLoad(name, fp))
 		goto endlseq;
 
 	if (!silent)
@@ -476,7 +462,7 @@ FCEUGI *FCEUI_LoadGameVirtual(const char *name, int OverwriteVidMode, bool silen
 	extern char LoadedRomFName[2048];
 	extern int loadDebugDataFailed;
 
-	if ((loadDebugDataFailed = loadPreferences(mass_replace(LoadedRomFName, "|", ".").c_str())))
+	if ((loadDebugDataFailed = loadPreferences(LoadedRomFName)))
 		if (!silent)
 			FCEU_printf("Couldn't load debugging data.\n");
 
@@ -486,18 +472,8 @@ FCEUGI *FCEUI_LoadGameVirtual(const char *name, int OverwriteVidMode, bool silen
 	FCEU_ResetVidSys();
 
 	if (GameInfo->type != GIT_NSF)
-	{
 		if (FSettings.GameGenie)
-		{
-			if (FCEU_OpenGenie())
-			{
-				FCEUI_SetGameGenie(false);
-#ifdef WIN32
-				genie = 0;
-#endif
-			}
-		}
-	}
+			FCEU_OpenGenie();
 	PowerNES();
 
 	if (GameInfo->type != GIT_NSF)
@@ -509,11 +485,13 @@ FCEUGI *FCEUI_LoadGameVirtual(const char *name, int OverwriteVidMode, bool silen
 	if (GameInfo->type != GIT_NSF)
 		FCEU_LoadGameCheats(0);
 
-	if (AutoResumePlay)
+	if (AutoResumePlay && (GameInfo->type != GIT_NSF))
 	{
 		// load "-resume" savestate
-		if (FCEUSS_Load(FCEU_MakeFName(FCEUMKF_RESUMESTATE, 0, 0).c_str(), false))
+		if (FCEUSS_Load(FCEU_MakeFName(FCEUMKF_RESUMESTATE, 0, 0).c_str()))
 			FCEU_DispMessage("Old play session resumed.", 0);
+		else
+			FCEU_DispMessage("", 0);
 	}
 
 	ResetScreenshotsCounter();
@@ -808,8 +786,8 @@ void PowerNES(void) {
 	SetReadHandler(0, 0x7FF, ARAML);
 	SetWriteHandler(0, 0x7FF, BRAML);
 
-	SetReadHandler(0x800, 0x1FFF, ARAMH);	// Part of a little
-	SetWriteHandler(0x800, 0x1FFF, BRAMH);	//hack for a small speed boost.
+	SetReadHandler(0x800, 0x1FFF, ARAMH); // Part of a little
+	SetWriteHandler(0x800, 0x1FFF, BRAMH); //hack for a small speed boost.
 
 	InitializeInput();
 	FCEUSND_Power();
@@ -832,7 +810,7 @@ void PowerNES(void) {
 #endif
 	FCEU_PowerCheats();
 	LagCounterReset();
-	// clear back buffer
+	// clear back baffer
 	extern uint8 *XBackBuf;
 	memset(XBackBuf, 0, 256 * 256);
 
@@ -854,7 +832,6 @@ void FCEU_ResetVidSys(void) {
 		w = FSettings.PAL;
 
 	PAL = w ? 1 : 0;
-
 	FCEUPPU_SetVideoSystem(w);
 	SetSoundVariables();
 }
@@ -981,15 +958,14 @@ void UpdateAutosave(void) {
 		AutosaveCounter = 0;
 		AutosaveIndex = (AutosaveIndex + 1) % AutosaveQty;
 		f = strdup(FCEU_MakeFName(FCEUMKF_AUTOSTATE, AutosaveIndex, 0).c_str());
-		FCEUSS_Save(f, false);
+		FCEUSS_Save(f);
 		AutoSS = true;  //Flag that an auto-savestate was made
 		free(f);
-        f = NULL;
 		AutosaveStatus[AutosaveIndex] = 1;
 	}
 }
 
-void FCEUI_RewindToLastAutosave(void) {
+void FCEUI_Autosave(void) {
 	if (!EnableAutosave || !AutoSS)
 		return;
 
@@ -998,7 +974,6 @@ void FCEUI_RewindToLastAutosave(void) {
 		f = strdup(FCEU_MakeFName(FCEUMKF_AUTOSTATE, AutosaveIndex, 0).c_str());
 		FCEUSS_Load(f);
 		free(f);
-        f = NULL;
 
 		//Set pointer to previous available slot
 		if (AutosaveStatus[(AutosaveIndex + AutosaveQty - 1) % AutosaveQty] == 1) {
@@ -1053,7 +1028,6 @@ bool FCEU_IsValidUI(EFCEUI ui) {
 	case FCEUI_POWER:
 	case FCEUI_EJECT_DISK:
 	case FCEUI_SWITCH_DISK:
-	case FCEUI_INSERT_COIN:
 		if (!GameInfo) return false;
 		if (FCEUMOV_Mode(MOVIEMODE_RECORD)) return true;
 #ifdef WIN32

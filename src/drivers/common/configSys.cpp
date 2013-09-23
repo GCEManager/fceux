@@ -395,9 +395,9 @@ Config::setOption(const std::string &name,
 
 int
 Config::getOption(const std::string &name,
-                  std::string *value) const
+                  std::string *value)
 {
-    std::map<std::string, std::string>::const_iterator opt_i;
+    std::map<std::string, std::string>::iterator opt_i;
 
     // confirm that the option exists
     opt_i = _strOptMap.find(name);
@@ -412,9 +412,9 @@ Config::getOption(const std::string &name,
 
 int
 Config::getOption(const std::string &name,
-                  const char **value) const
+                  const char **value)
 {
-    std::map<std::string, std::string>::const_iterator opt_i;
+    std::map<std::string, std::string>::iterator opt_i;
 
     // confirm that the option exists
     opt_i = _strOptMap.find(name);
@@ -429,9 +429,9 @@ Config::getOption(const std::string &name,
 
 int
 Config::getOption(const std::string &name,
-                  int *value) const
+                  int *value)
 {
-    std::map<std::string, int>::const_iterator opt_i;
+    std::map<std::string, int>::iterator opt_i;
 
     // confirm that the option exists
     opt_i = _intOptMap.find(name);
@@ -446,9 +446,9 @@ Config::getOption(const std::string &name,
 
 int
 Config::getOption(const std::string &name,
-                  double *value) const
+                  double *value)
 {
-    std::map<std::string, double>::const_iterator opt_i;
+    std::map<std::string, double>::iterator opt_i;
 
     // confirm that the option exists
     opt_i = _dblOptMap.find(name);

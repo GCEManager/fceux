@@ -73,7 +73,6 @@ extern bool oldInputDisplay;
 extern bool fullSaveStateLoads;
 extern int frameSkipAmt;
 extern int32 fps_scale_frameadvance;
-extern bool symbDebugEnabled;
 
 extern TASEDITOR_CONFIG taseditorConfig;
 extern char* recentProjectsArray[];
@@ -87,21 +86,15 @@ extern int DbgPosX,DbgPosY;
 extern int DbgSizeX,DbgSizeY;
 extern int MemViewSizeX,MemViewSizeY;
 extern int MemView_wndx, MemView_wndy;
-extern bool MemView_HighlightActivity;
-extern unsigned int MemView_HighlightActivity_FadingPeriod;
-extern bool MemView_HighlightActivity_FadeWhenPaused;
 extern int MemFind_wndx, MemFind_wndy;
 extern int NTViewPosX,NTViewPosY;
-extern int PPUViewPosX, PPUViewPosY;
-extern bool PPUView_maskUnusedGraphics;
-extern bool PPUView_invertTheMask;
+extern int PPUViewPosX,PPUViewPosY;
 extern int MainWindow_wndx, MainWindow_wndy;
 extern int MemWatch_wndx, MemWatch_wndy;
 extern int Monitor_wndx, Monitor_wndy;
 extern int logging_options;
 extern int log_lines_option;
 extern int Tracer_wndx, Tracer_wndy;
-extern int Tracer_wndWidth, Tracer_wndHeight;
 extern int CDLogger_wndx, CDLogger_wndy;
 extern bool autoresumeCDLogging;
 extern bool autosaveCDL;
@@ -210,8 +203,8 @@ static CFGSTRUCT fceuconfig[] =
 	AC(NTSCwinspecial),
 	AC(winsizemulx),
 	AC(winsizemuly),
-	AC(tvAspectX),
-	AC(tvAspectY),
+	NAC("saspectw987",saspectw),
+	NAC("saspecth987",saspecth),
 
 	AC(soundrate),
 	AC(soundbuftime),
@@ -244,8 +237,7 @@ static CFGSTRUCT fceuconfig[] =
 	NAC("srendlinep",srendlinep),
 	NAC("erendlinep",erendlinep),
 
-	AC(directDrawModeWindowed),
-	AC(directDrawModeFullscreen),
+	AC(disvaccel),
 	AC(winsync),
 	NAC("988fssync",fssync),
 
@@ -275,11 +267,8 @@ static CFGSTRUCT fceuconfig[] =
 	AC(frameAdvanceLagSkip),
 	AC(debuggerAutoload),
 	AC(allowUDLR),
-	AC(symbDebugEnabled),
 	AC(debuggerSaveLoadDEBFiles),
 	AC(debuggerDisplayROMoffsets),
-	AC(debuggerFontSize),
-	AC(hexeditorFontSize),
 	AC(fullSaveStateLoads),
 	AC(frameSkipAmt),
 	AC(fps_scale_frameadvance),
@@ -295,17 +284,12 @@ static CFGSTRUCT fceuconfig[] =
 	AC(MemViewSizeY),
 	AC(MemView_wndx),
 	AC(MemView_wndy),
-	AC(MemView_HighlightActivity),
-	AC(MemView_HighlightActivity_FadingPeriod),
-	AC(MemView_HighlightActivity_FadeWhenPaused),
 	AC(MemFind_wndx), 
 	AC(MemFind_wndy),
 	AC(NTViewPosX),
 	AC(NTViewPosY),
 	AC(PPUViewPosX),
 	AC(PPUViewPosY),
-	AC(PPUView_maskUnusedGraphics),
-	AC(PPUView_invertTheMask),
 	AC(MainWindow_wndx),
 	AC(MainWindow_wndy),
 	AC(MemWatch_wndx),
@@ -316,8 +300,6 @@ static CFGSTRUCT fceuconfig[] =
 	AC(log_lines_option),
 	AC(Tracer_wndx),
 	AC(Tracer_wndy),
-	AC(Tracer_wndWidth),
-	AC(Tracer_wndHeight),
 	AC(CDLogger_wndx),
 	AC(CDLogger_wndy),
 	AC(autosaveCDL),

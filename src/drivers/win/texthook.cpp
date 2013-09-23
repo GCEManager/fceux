@@ -41,7 +41,6 @@
 #include "cdlogger.h" //needed for TextHookerLoadTable
 #include "fceu.h"
 #include "main.h"
-#include "utils/xstring.h"
 
 char *textToTrans; // buffer to hold the text that needs translating
 char *transText; //holds the translated text
@@ -692,7 +691,7 @@ int TextHookerSaveTableFile(){
 	ofn.hInstance=fceu_hInstance;
 	ofn.lpstrTitle="Load Table File...";
 	ofn.lpstrFilter=filter;
-	strcpy(nameo, mass_replace(GetRomName(), "|", ".").c_str());
+	strcpy(nameo,GetRomName());
 	ofn.lpstrFile=nameo;
 	ofn.lpstrDefExt="tht";
 	ofn.nMaxFile=256;

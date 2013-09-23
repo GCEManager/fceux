@@ -6,7 +6,6 @@
 #include "movie.h"
 #include "archive.h"
 #include "utils/xstring.h"
-#include "taseditor/taseditor_config.h"
 
 static const char* fm2ext[] = { "fm2", "fm3", 0};
 
@@ -22,8 +21,6 @@ static std::vector<std::wstring> currComments;
 static std::vector<std::string> currSubtitles;
 
 extern FCEUGI *GameInfo;
-
-extern TASEDITOR_CONFIG taseditorConfig;
 
 //retains the state of the readonly checkbox and stopframe value
 bool replayReadOnlySetting;
@@ -614,8 +611,8 @@ BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 		return FALSE;
 
 	case WM_COMMAND:
-		if (HIWORD(wParam) == EN_CHANGE)
-		{
+		if(HIWORD(wParam) == EN_CHANGE)
+		 {
 			if (LOWORD(wParam) == IDC_EDIT_STOPFRAME) // Check if Stop movie at value has changed
 			{
 				if (stopframeWasEditedByUser)
@@ -627,18 +624,20 @@ BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 				else
 					stopframeWasEditedByUser = true;
 			}
-		}
+		 }
 
-		if (HIWORD(wParam) == CBN_SELCHANGE)
+		if(HIWORD(wParam) == CBN_SELCHANGE)
 		{
 			UpdateReplayDialog(hwndDlg);
-		} else if(HIWORD(wParam) == CBN_CLOSEUP)
+		}
+		else if(HIWORD(wParam) == CBN_CLOSEUP)
 		{
 			LONG lCount = SendDlgItemMessage(hwndDlg, IDC_COMBO_FILENAME, CB_GETCOUNT, 0, 0);
 			LONG lIndex = SendDlgItemMessage(hwndDlg, IDC_COMBO_FILENAME, CB_GETCURSEL, 0, 0);
 			if (lIndex != CB_ERR && lIndex == lCount-1)
 				SendMessage(hwndDlg, WM_COMMAND, (WPARAM)IDOK, 0);		// send an OK notification to open the file browser
-		} else
+		}
+		else
 		{
 			int wID = LOWORD(wParam);
 			switch(wID)
@@ -692,15 +691,14 @@ BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 								{
 									// select already existing string
 									SendDlgItemMessage(hwndDlg, IDC_COMBO_FILENAME, CB_SETCURSEL, lOtherIndex, 0);
-									UpdateReplayDialog(hwndDlg);
-								} else
-								{
+								} else {
 									SendDlgItemMessage(hwndDlg, IDC_COMBO_FILENAME, CB_INSERTSTRING, lIndex, (LPARAM)relative);
 									SendDlgItemMessage(hwndDlg, IDC_COMBO_FILENAME, CB_SETCURSEL, lIndex, 0);
-									//UpdateReplayDialog(hwndDlg);	- this call would be redundant, because the update is always triggered by CBN_SELCHANGE message anyway
 								}
+
 								// restore focus to the dialog
 								SetFocus(GetDlgItem(hwndDlg, IDC_COMBO_FILENAME));
+								UpdateReplayDialog(hwndDlg);
 							}
 						abort:
 
@@ -730,7 +728,6 @@ BOOL CALLBACK ReplayDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 				return TRUE;
 			}
 		}
-		return FALSE;
 
 	case WM_CTLCOLORSTATIC:
 		if ((HWND)lParam == GetDlgItem(hwndDlg, IDC_LABEL_CURRCHECKSUM))
@@ -829,18 +826,7 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 		UpdateRecordDialogPath(hwndDlg, p->szFilename);
 		p->szFilename = "";
 
-		if (strlen(taseditorConfig.lastAuthorName))
-		{
-			// convert UTF8 char* string to Unicode wstring
-			wchar_t savedAuthorName[AUTHOR_NAME_MAX_LEN] = {0};
-			MultiByteToWideChar(CP_UTF8, 0, taseditorConfig.lastAuthorName, -1, savedAuthorName, AUTHOR_NAME_MAX_LEN);
-			p->authorName = savedAuthorName;
-		} else
-		{
-			p->authorName = L"";
-		}
-		SendMessage(GetDlgItem(hwndDlg, IDC_EDIT_AUTHOR), CCM_SETUNICODEFORMAT, TRUE, 0);
-		SetDlgItemTextW(hwndDlg, IDC_EDIT_AUTHOR, (LPCWSTR)(p->authorName.c_str()));
+		SendMessage(GetDlgItem(hwndDlg,IDC_EDIT_AUTHOR), CCM_SETUNICODEFORMAT, TRUE, 0);
 
 		// Populate the "record from..." dialog
 		{
@@ -931,17 +917,8 @@ static BOOL CALLBACK RecordDialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LP
 					LONG lIndex = SendDlgItemMessage(hwndDlg, IDC_COMBO_RECORDFROM, CB_GETCURSEL, 0, 0);
 					p->szFilename = GetRecordPath(hwndDlg);
 					p->recordFrom = (int)lIndex;
-					// save author name in params and in config (converted to multibyte char*)
-					wchar_t authorName[AUTHOR_NAME_MAX_LEN] = {0};
-					GetDlgItemTextW(hwndDlg, IDC_EDIT_AUTHOR, (LPWSTR)authorName, AUTHOR_NAME_MAX_LEN);
-					p->authorName = authorName;
-					if (p->authorName == L"")
-						taseditorConfig.lastAuthorName[0] = 0;
-					else
-						// convert Unicode wstring to UTF8 char* string
-						WideCharToMultiByte(CP_UTF8, 0, (p->authorName).c_str(), -1, taseditorConfig.lastAuthorName, AUTHOR_NAME_MAX_LEN, 0, 0);
-
-					if (lIndex >= 2)
+					p->author = GetDlgItemTextW<500>(hwndDlg,IDC_EDIT_AUTHOR);
+					if(lIndex>=2)
 						p->szSavestateFilename = GetSavePath(hwndDlg);
 					EndDialog(hwndDlg, 1);
 				}
@@ -1006,7 +983,7 @@ void FCEUD_MovieRecordTo()
 
 		EMOVIE_FLAG flags = MOVIE_FLAG_NONE;
 		if(p.recordFrom == 0) flags = MOVIE_FLAG_FROM_POWERON;
-		FCEUI_SaveMovie(p.szFilename.c_str(), flags, p.authorName);
+		FCEUI_SaveMovie(p.szFilename.c_str(), flags, p.author);
 	}
 }
 

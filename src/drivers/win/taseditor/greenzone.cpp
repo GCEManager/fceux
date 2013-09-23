@@ -94,16 +94,9 @@ void GREENZONE::update()
 		} else
 		{
 			if (lagFlag && (old_lagFlag != LAGGED_YES))
-			{
 				lagLog.setLagInfo(currFrameCounter - 1, true);
-				// keep current snapshot laglog in touch
-				history.getCurrentSnapshot().laglog.setLagInfo(currFrameCounter - 1, true);
-			} else if (!lagFlag && old_lagFlag != LAGGED_NO)
-			{
+			else if (!lagFlag && old_lagFlag != LAGGED_NO)
 				lagLog.setLagInfo(currFrameCounter - 1, false);
-				// keep current snapshot laglog in touch
-				history.getCurrentSnapshot().laglog.setLagInfo(currFrameCounter - 1, false);
-			}
 		}
 	}
 }
@@ -581,7 +574,7 @@ void GREENZONE::invalidate(int after)
 		if (greenzoneSize > after + 1)
 		{
 			greenzoneSize = after + 1;
-			FCEUMOV_IncrementRerecordCount();
+			currMovieData.rerecordCount++;
 		}
 	}
 	// redraw Piano Roll even if Greenzone didn't change
@@ -601,7 +594,7 @@ void GREENZONE::invalidateAndUpdatePlayback(int after)
 		if (greenzoneSize > after + 1 || currFrameCounter > after)
 		{
 			greenzoneSize = after + 1;
-			FCEUMOV_IncrementRerecordCount();
+			currMovieData.rerecordCount++;
 			// either set Playback cursor to be inside the Greenzone or run seeking to restore Playback cursor position
 			if (currFrameCounter >= greenzoneSize)
 			{

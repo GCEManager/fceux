@@ -5,6 +5,7 @@
 
 extern CFGSTRUCT DriverConfig[];
 extern ARGPSTRUCT DriverArgs[];
+extern char *DriverUsage;
 
 void DoDriverArgs(void);
 

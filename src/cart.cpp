@@ -21,6 +21,10 @@
 /// \file
 /// \brief This file contains all code for coordinating the mapping in of the address space external to the NES.
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <limits.h>
 #include "types.h"
 #include "fceu.h"
 #include "ppu.h"
@@ -32,11 +36,6 @@
 #include "file.h"
 #include "utils/memory.h"
 
-
-#include <cstring>
-#include <cstdlib>
-#include <cstdio>
-#include <climits>
 
 uint8 *Page[32], *VPage[8];
 uint8 **VPageR = VPage;
@@ -340,48 +339,40 @@ static uint8 *GENIEROM = 0;
 
 void FixGenieMap(void);
 
-// Called when a game(file) is opened successfully. Returns TRUE on error.
-bool FCEU_OpenGenie(void)
-{
+// Called when a game(file) is opened successfully.
+void FCEU_OpenGenie(void) {
 	FILE *fp;
 	int x;
 
-	if (!GENIEROM)
-	{
+	if (!GENIEROM) {
 		char *fn;
 
-		if (!(GENIEROM = (uint8*)FCEU_malloc(4096 + 1024)))
-			return true;
+		if (!(GENIEROM = (uint8*)FCEU_malloc(4096 + 1024))) return;
 
 		fn = strdup(FCEU_MakeFName(FCEUMKF_GGROM, 0, 0).c_str());
 		fp = FCEUD_UTF8fopen(fn, "rb");
-		if (!fp)
-		{
-			FCEU_PrintError("Error opening Game Genie ROM image!\nIt should be named \"gg.rom\"!");
+		if (!fp) {
+			FCEU_PrintError("Error opening Game Genie ROM image!");
 			free(GENIEROM);
 			GENIEROM = 0;
-			return true;
+			return;
 		}
-		if (fread(GENIEROM, 1, 16, fp) != 16)
-		{
+		if (fread(GENIEROM, 1, 16, fp) != 16) {
  grerr:
 			FCEU_PrintError("Error reading from Game Genie ROM image!");
 			free(GENIEROM);
 			GENIEROM = 0;
 			fclose(fp);
-			return true;
+			return;
 		}
-		if (GENIEROM[0] == 0x4E)
-		{
-			/* iNES ROM image */
+		if (GENIEROM[0] == 0x4E) { /* iNES ROM image */
 			if (fread(GENIEROM, 1, 4096, fp) != 4096)
 				goto grerr;
 			if (fseek(fp, 16384 - 4096, SEEK_CUR))
 				goto grerr;
 			if (fread(GENIEROM + 4096, 1, 256, fp) != 256)
 				goto grerr;
-		} else
-		{
+		} else {
 			if (fread(GENIEROM + 16, 1, 4352 - 16, fp) != (4352 - 16))
 				goto grerr;
 		}
@@ -389,13 +380,10 @@ bool FCEU_OpenGenie(void)
 
 		/* Workaround for the FCE Ultra CHR page size only being 1KB */
 		for (x = 0; x < 4; x++)
-		{
 			memcpy(GENIEROM + 4096 + (x << 8), GENIEROM + 4096, 256);
-		}
 	}
 
 	geniestage = 1;
-	return false;
 }
 
 /* Called when a game is closed. */

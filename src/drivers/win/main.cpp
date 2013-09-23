@@ -122,7 +122,7 @@ void ApplyDefaultCommandMapping(void);
 // Internal variables
 int frameSkipAmt = 18;
 uint8 *xbsave = NULL;
-int eoptions = EO_BGRUN | EO_FORCEISCALE | EO_BESTFIT | EO_BGCOLOR | EO_SQUAREPIXELS;
+int eoptions = EO_BGRUN | EO_FORCEISCALE | EO_BESTFIT | EO_BGCOLOR;
 
 //global variables
 int soundoptions = SO_SECONDARY | SO_GFOCUS;
@@ -141,8 +141,8 @@ int soundPCMvol = 256;			//Sound channel PCM - volume control
 
 int KillFCEUXonFrame = 0; //TODO: clean up, this is used in fceux, move it over there?
 
+double saspectw = 1.0, saspecth = 1.0;
 double winsizemulx = 1.0, winsizemuly = 1.0;
-double tvAspectX = TV_ASPECT_DEFAULT_X, tvAspectY = TV_ASPECT_DEFAULT_Y;
 int genie = 0;
 int pal_emulation = 0;
 int pal_setting_specified = 0;
@@ -559,6 +559,7 @@ static BOOL CALLBACK EnumCallbackFCEUXInstantiated(HWND hWnd, LPARAM lParam)
 	//LPSTR lpClassName = '\0';
 	std::string TempString;
 	char buf[512];
+	bool PassedTest=true;
 
 	GetClassName(hWnd, buf, 511);
 	//Console.WriteLine(lpClassName.ToString());
@@ -568,11 +569,26 @@ static BOOL CALLBACK EnumCallbackFCEUXInstantiated(HWND hWnd, LPARAM lParam)
 	if (TempString != "FCEUXWindowClass")
 		return true;
 
-	//zero 17-sep-2013 - removed window caption test which wasnt really making a lot of sense to me and was broken in any event
-	if (hWnd != hAppWnd)
-	{
-		DoInstantiatedExit = true;
-		DoInstantiatedExitWindow = hWnd;
+	//memset(buf, 0, 512 * sizeof(char));
+	GetWindowText(hWnd, buf, 512 * sizeof(char));
+
+	if (hWnd != hAppWnd) {
+		PassedTest = (PassedTest & (buf[0] == 'F'));
+		PassedTest = (PassedTest & (buf[1] == 'C'));
+		PassedTest = (PassedTest & (buf[2] == 'E'));
+		PassedTest = (PassedTest & (buf[3] == 'U'));
+		PassedTest = (PassedTest & (buf[4] == 'X'));
+		PassedTest = (PassedTest & (buf[5] == ' '));
+		PassedTest = (PassedTest & ((buf[6] >= '2') & (buf[6] <= '9')));
+		PassedTest = (PassedTest & (buf[7] == '.'));
+		PassedTest = (PassedTest & ((buf[8] >= '1') & (buf[8] <= '9')));
+		PassedTest = (PassedTest & (buf[9] == '.'));
+		PassedTest = (PassedTest & ((buf[10] >= '4') & (buf[10] <= '9')));
+
+		if (PassedTest) {
+			DoInstantiatedExit=true;
+			DoInstantiatedExitWindow = hWnd;
+		}
 	}
 
 	//printf("[%03i] Found '%s'\n", ++WinCount, buf);
@@ -611,6 +627,7 @@ int main(int argc,char *argv[])
 	}
 
 	InitCommonControls();
+	debugSystem = new DebugSystem();
 
 	if(!FCEUI_Initialize())
 	{
@@ -716,13 +733,6 @@ int main(int argc,char *argv[])
 				do_exit();
 				return 0;
 			}
-			else
-			{
-				//kill this one, activate the other one
-				SetActiveWindow(DoInstantiatedExitWindow);
-				do_exit();
-				return 0;
-			}
 		}
 	}
 
@@ -737,9 +747,6 @@ int main(int argc,char *argv[])
 		do_exit();
 		return 1;
 	}
-
-	debugSystem = new DebugSystem();
-	debugSystem->init();
 
 	InitSpeedThrottle();
 
